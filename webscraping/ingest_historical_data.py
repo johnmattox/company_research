@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 warnings.filterwarnings("ignore")
 
-os.chdir(os.getcwd()+'\\Documents\\python\\company_research\\webscraping\\historic_data\\xlsxs')
+os.chdir(os.getcwd()+'\\historic_data\\xlsxs')
 
 class renamer():
     def __init__(self):
@@ -33,26 +33,28 @@ def concatena_cols_df(df,cols,name):
     df[name] = df['dummy_col']
     df = df.drop(['dummy_col'],axis=1)
     return df
-    
+ 
+### Carrega dados dos Balanços Patrimoniais    
+
 def corrige_df_BP(df):
     df = df.copy()
     colunas = [n.lower() for n in df.columns]
 
-    cols_check = [z for z in colunas if 'ativo' in z and 'aplicações' in z]
-    if len(cols_check) > 0:
-        df = concatena_cols_df(df,cols_check,'ativo - aplicações financeiras')
+#    cols_check = [z for z in colunas if 'ativo' in z and 'aplicações' in z and not 'amortizado' in z]
+#    if len(cols_check) > 0:
+#        df = concatena_cols_df(df,cols_check,'ativo - aplicações financeiras')
     cols_check = [z for z in colunas if 'ativo' in z and 'imobilizado' in z]
     if len(cols_check) > 0:
         df = concatena_cols_df(df,cols_check,'ativo - imobilizado')
     cols_check = [z for z in colunas if 'ativo' in z and 'outros' in z and not 'circulantes' in z]
     if len(cols_check) > 0:
         df = concatena_cols_df(df,cols_check,'ativo - outros')
-    cols_check = [z for z in colunas if 'obrigações' in z and not 'trabalhistas' in z]
-    if len(cols_check) > 0:
-        df = concatena_cols_df(df,cols_check,'passivo - obrigações')
-    cols_check = [z for z in colunas if 'passivo' in z and 'outro' in z]
-    if len(cols_check) > 0:
-        df = concatena_cols_df(df,cols_check,'passivo - outros')
+#    cols_check = [z for z in colunas if 'obrigações' in z and not 'trabalhistas' in z]
+#    if len(cols_check) > 0:
+#        df = concatena_cols_df(df,cols_check,'passivo - obrigações')
+#    cols_check = [z for z in colunas if 'passivo' in z and 'outro' in z]
+#    if len(cols_check) > 0:
+#        df = concatena_cols_df(df,cols_check,'passivo - outros')
     cols_check = [z for z in colunas if 'part' in z and 'acion' in z]
     if len(cols_check) > 0:
         df = concatena_cols_df(df,cols_check,'passivo - participação dos acionistas não controladores')
@@ -109,9 +111,9 @@ for fil in glob.glob("*.xls"):
     df['ticker'] = fil.strip(".xls")
     df.columns = [n.lower() for n in df.columns]
     df = df.rename(columns=renamer())
-    for col in df.columns:
-        if ' 1' in col:
-            df = concatena_cols_df(df,[col[:-2],col],col[:-2])
+#    for col in df.columns:
+#        if ' 1' in col:
+#            df = concatena_cols_df(df,[col[:-2],col],col[:-2])
     df = corrige_df_BP(df)
     for col in np.setdiff1d(hist_data_BP.columns,df.columns):
         df[col] = np.nan
@@ -122,3 +124,43 @@ save_path = os.path.abspath(os.path.join(os.getcwd(), '..',))
 hist_data_BP.reset_index().rename(columns={'index':'safra'}).to_csv(save_path+'\\historico_balanco_patrimonial.csv',sep=';',encoding='latin-1',index=False)
 
 #teste_read = pd.read_csv(save_path+'\historico_balanco_patrimonial.csv',sep=';',encoding='latin-1')
+
+### Carrega dados dos Demonstrativos de Resultado
+
+list_of_cols_DRE = []
+
+for fil in list(glob.glob("*.xls")):
+    xls = pd.ExcelFile(fil)
+    df = xls.parse('Dem. Result.', skiprows=1, na_values=['NA'])
+    df.columns = ['safra'] + list(df.columns[1:])
+    df = df.set_index('safra').T
+    list_of_cols_DRE = list_of_cols_DRE + list(df.columns)
+
+list_of_cols_DRE = sorted([n.lower() for n in list(np.unique(list_of_cols_DRE))+['ticker']])
+for i in range(len(list_of_cols_DRE)):
+    if "/" in list_of_cols_DRE[i]:
+        list_of_cols_DRE[i] = list_of_cols_DRE[i].replace("/"," ")
+        
+hist_data_DRE = pd.DataFrame(columns=list_of_cols_DRE)
+
+for fil in glob.glob("*.xls"):
+    xls = pd.ExcelFile(fil)
+    df = xls.parse('Dem. Result.', skiprows=1, na_values=['NA'])
+    df.columns = ['safra'] + list(df.columns[1:])
+    for i in range(df.shape[0]):
+        if '/' in df.loc[i,'safra']:
+            df.loc[i,'safra'] = df.loc[i,'safra'].replace("/"," ")
+    df = df.set_index('safra').T
+    df['ticker'] = fil.strip(".xls")
+    df.columns = [n.lower() for n in df.columns]
+    for col in np.setdiff1d(hist_data_DRE.columns,df.columns):
+        df[col] = np.nan
+    df = df[list(sorted(df.columns))] 
+    hist_data_DRE = hist_data_DRE.append(df)
+    
+delete_rows = [n for n in hist_data_DRE.index if "Unnamed" in n]
+for r in delete_rows:
+    hist_data_DRE = hist_data_DRE.drop(r)
+    
+save_path = os.path.abspath(os.path.join(os.getcwd(), '..',))
+hist_data_DRE.reset_index().rename(columns={'index':'safra'}).to_csv(save_path+'\\historico_DRE.csv',sep=';',encoding='latin-1',index=False)
