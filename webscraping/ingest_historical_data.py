@@ -101,6 +101,7 @@ for fil in glob.glob("*.xls"):
         if 'total' in df.loc[i,'safra'].lower():
             if 'ativo' in df.loc[i,'safra'].lower():
                 compl = 'ativo - '
+                df.loc[i,'safra'] = compl+df.loc[i,'safra']
             elif  'passivo' in df.loc[i,'safra'].lower():
                 compl = 'passivo - '
         elif 'líquido' in df.loc[i,'safra'].lower():
