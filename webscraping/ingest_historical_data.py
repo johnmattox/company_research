@@ -11,6 +11,7 @@ import numpy as np
 warnings.filterwarnings("ignore")
 
 os.chdir(os.getcwd()+'\\historic_data\\xlsxs')
+save_path = os.path.abspath(os.path.join(os.getcwd(), '..',))
 
 class renamer():
     def __init__(self):
@@ -46,9 +47,9 @@ def corrige_df_BP(df):
     cols_check = [z for z in colunas if 'ativo' in z and 'imobilizado' in z]
     if len(cols_check) > 0:
         df = concatena_cols_df(df,cols_check,'ativo - imobilizado')
-    cols_check = [z for z in colunas if 'ativo' in z and 'outros' in z and not 'circulantes' in z]
-    if len(cols_check) > 0:
-        df = concatena_cols_df(df,cols_check,'ativo - outros')
+#    cols_check = [z for z in colunas if 'ativo' in z and 'outros' in z and not 'circulantes' in z]
+#    if len(cols_check) > 0:
+#        df = concatena_cols_df(df,cols_check,'ativo - outros')
 #    cols_check = [z for z in colunas if 'obrigações' in z and not 'trabalhistas' in z]
 #    if len(cols_check) > 0:
 #        df = concatena_cols_df(df,cols_check,'passivo - obrigações')
@@ -121,7 +122,6 @@ for fil in glob.glob("*.xls"):
     df = df[list(sorted(df.columns))] 
     hist_data_BP = hist_data_BP.append(df)
 
-save_path = os.path.abspath(os.path.join(os.getcwd(), '..',))
 hist_data_BP.reset_index().rename(columns={'index':'safra'}).to_csv(save_path+'\\historico_balanco_patrimonial.csv',sep=';',encoding='latin-1',index=False)
 
 #teste_read = pd.read_csv(save_path+'\historico_balanco_patrimonial.csv',sep=';',encoding='latin-1')
@@ -163,5 +163,4 @@ delete_rows = [n for n in hist_data_DRE.index if "Unnamed" in n]
 for r in delete_rows:
     hist_data_DRE = hist_data_DRE.drop(r)
     
-save_path = os.path.abspath(os.path.join(os.getcwd(), '..',))
 hist_data_DRE.reset_index().rename(columns={'index':'safra'}).to_csv(save_path+'\\historico_DRE.csv',sep=';',encoding='latin-1',index=False)
